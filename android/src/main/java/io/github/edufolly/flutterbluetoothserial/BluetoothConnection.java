@@ -92,7 +92,7 @@ public abstract class BluetoothConnection
         private final BluetoothSocket socket;
         private final InputStream input;
         private final OutputStream output;
-        private boolean requestedClosing = false;
+        private volatile boolean requestedClosing = false;
         
         ConnectionThread(BluetoothSocket socket) {
             this.socket = socket;
@@ -118,6 +118,11 @@ public abstract class BluetoothConnection
             while (!requestedClosing) {
                 try {
                     bytes = input.read(buffer);
+
+                    // Read can return -1 on end of stream (e.g. remote closed the link)
+                    if (bytes < 0) {
+                        break;
+                    }
 
                     onRead(Arrays.copyOf(buffer, bytes));
                 } catch (IOException e) {
